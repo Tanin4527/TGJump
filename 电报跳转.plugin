@@ -21,7 +21,7 @@ DOMAIN-SUFFIX,telegram.org,PROXY
 DOMAIN-SUFFIX,telesco.pe,PROXY
 
 [Script]
-http-response ^https?:\/\/(t\.me|telegram\.me|telegram\.dog)\/.+ script-path=https://github.com/Tanin4527/TGJump/raw/main/telegram_redirect.js, requires-body=false, timeout=10, tag=电报跳转
+http-response ^https?:\/\/(t\.me|telegram\.me|telegram\.dog)\/.+ script-path=https://raw.githubusercontent.com/Tanin4527/TGJump/main/telegram_redirect.js, requires-body=false, timeout=10, tag=电报跳转
 
 [MITM]
 hostname = %APPEND% t.me, telegram.me, telegram.dog
