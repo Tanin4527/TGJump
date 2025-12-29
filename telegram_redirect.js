@@ -1,11 +1,18 @@
 /**
- * 电报跳转 - Telegram External Link Redirect for Loon
- * Intercept: https://t.me/*, https://telegram.me/*, https://telegram.dog/*
- * Respond: 302 Location: <target scheme> OR HTML page that opens scheme
+ * 电报跳转 - Telegram External Link Redirect for Loon (Full Fixed)
+ * Intercept:
+ *  - https://t.me/*
+ *  - https://telegram.me/*
+ *  - https://telegram.dog/*
+ *  - https://telegram.org/*
  *
- * Notes:
- * - Swiftgram: sg://parseurl?url=<encoded_url>
- * - Fallback: tg:// deep links (Telegram standard)
+ * Respond:
+ *  - 302 Location: <target scheme>
+ *  - OR HTML page that opens scheme
+ *
+ * Key fixes:
+ * 1) Allow telegram.org host (Safari often lands on telegram.org after t.me 302)
+ * 2) For telegram.org, do NOT attempt to parse paths—just feed original https URL into target scheme.
  */
 
 function args() {
@@ -26,40 +33,48 @@ function parseTelegramLink(u) {
   try {
     const url = new URL(u);
     const host = url.hostname.toLowerCase();
-    if (!["t.me", "telegram.me", "telegram.dog"].includes(host)) return null;
+
+    // ✅ FIX: include telegram.org
+    const allowed = ["t.me", "telegram.me", "telegram.dog", "telegram.org"];
+    if (!allowed.includes(host)) return null;
+
+    // For telegram.org: do not parse, return raw only (most robust)
+    if (host === "telegram.org") {
+      return { host, rawHttps: u, tg: null };
+    }
 
     const path = url.pathname.replace(/^\/+/, "");
     const parts = path.split("/").filter(Boolean);
     const rawHttps = u;
 
-    if (parts.length === 0) return { rawHttps };
+    if (parts.length === 0) return { host, rawHttps, tg: null };
 
     const p0 = parts[0];
 
     // joinchat / +invite
     if (p0 === "joinchat" && parts[1]) {
-      return { tg: `tg://join?invite=${enc(parts[1])}`, rawHttps };
+      return { host, tg: `tg://join?invite=${enc(parts[1])}`, rawHttps };
     }
     if (p0.startsWith("+") && p0.length > 1) {
-      return { tg: `tg://join?invite=${enc(p0.slice(1))}`, rawHttps };
+      return { host, tg: `tg://join?invite=${enc(p0.slice(1))}`, rawHttps };
     }
 
     // stickers
     if (p0 === "addstickers" && parts[1]) {
-      return { tg: `tg://addstickers?set=${enc(parts[1])}`, rawHttps };
+      return { host, tg: `tg://addstickers?set=${enc(parts[1])}`, rawHttps };
     }
 
     // t.me/s/channel
     if (p0 === "s" && parts[1]) {
-      return { tg: `tg://resolve?domain=${enc(parts[1])}`, rawHttps };
+      return { host, tg: `tg://resolve?domain=${enc(parts[1])}`, rawHttps };
     }
 
     // username[/post]
     const username = p0;
     if (parts[1] && /^\d+$/.test(parts[1])) {
-      return { tg: `tg://resolve?domain=${enc(username)}&post=${enc(parts[1])}`, rawHttps };
+      return { host, tg: `tg://resolve?domain=${enc(username)}&post=${enc(parts[1])}`, rawHttps };
     }
-    return { tg: `tg://resolve?domain=${enc(username)}`, rawHttps };
+    return { host, tg: `tg://resolve?domain=${enc(username)}`, rawHttps };
   } catch (_) {
     return null;
   }
@@ -80,6 +95,10 @@ function buildTarget(a, parsed, originalUrl) {
 
   // Others: either keep HTTPS (universal link) or fallback to tg://
   if (a.keepHttps) return raw;
+
+  // telegram.org 没有 tg:// 可解析的稳定统一映射，这里直接回 raw 最合理
+  if (parsed.host === "telegram.org") return raw;
+
   return parsed.tg || raw;
 }
 
@@ -110,6 +129,7 @@ function htmlJump(target) {
   if (!parsed) return $done({});
 
   const target = buildTarget(a, parsed, reqUrl);
+
   if (a.log) console.log(`[TGJump] ${reqUrl} -> ${target}`);
 
   if (a.method === "HTML页面跳转") {
