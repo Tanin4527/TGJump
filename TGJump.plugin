@@ -1,0 +1,28 @@
+#!name=TGJump
+#!desc=官方 Telegram 链接 → 第三方 TG 客户端（全集）
+#!author=Tanin4527
+#!loon_version=3.3.8(924)
+
+[Argument]
+client = select,"Swiftgram","通用(所有第三方)","Nicegram","iMe","Telegram X","TelePlus","Bestgram","Vidogram","Plus Messenger","Nekogram X","Telegram",tag=跳转至对应客户端
+jump = switch,true,tag=启用跳转
+
+[Rule]
+DOMAIN-SUFFIX,t.me,PROXY
+DOMAIN-SUFFIX,telegram.me,PROXY
+DOMAIN-SUFFIX,telegram.dog,PROXY
+DOMAIN-SUFFIX,telegram.org,PROXY
+DOMAIN-SUFFIX,telegra.ph,PROXY
+
+DOMAIN-SUFFIX,swiftgram.app,PROXY
+DOMAIN-SUFFIX,nicegram.app,PROXY
+DOMAIN-SUFFIX,nicegram.cloud,PROXY
+DOMAIN-SUFFIX,imem.app,PROXY
+DOMAIN-SUFFIX,intentchat.app,PROXY
+DOMAIN-SUFFIX,iturrit.com,PROXY
+
+[Script]
+http-request ^https?:\/\/(t\.me|telegram\.me|telegram\.dog)\/.+ script-path=https://raw.githubusercontent.com/Tanin4527/TGJump/main/tgjump.js,timeout=10,requires-body=false,tag=TGJump 跳转,enable={jump},argument=[{client}]
+
+[Mitm]
+hostname = t.me, telegram.me, telegram.dog
