@@ -1,0 +1,27 @@
+#!name=电报跳转
+#!desc=将 t.me/telegram.me/telegram.dog 等 Telegram 外链定向跳转到你指定的 TG 客户端（Swiftgram 专用 scheme + tg:// 兜底 + 自定义模板）。同时提供 PROXY 分流（在插件页把 PROXY 映射到策略组）。
+#!author=Tanin4527
+#!homepage=https://github.com/Tanin4527/TGJump
+#!icon=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png
+#!tag=Telegram,Redirect,DeepLink
+
+[Argument]
+redir_on = switch,true,tag=跳转开关,desc=关闭则不做任何跳转（仅保留分流规则）
+client = select,"Telegram(官方/默认)","Swiftgram","Nicegram","Turrit","iMe","Aka","Bright","TeleDR","自定义",tag=跳转客户端选择,desc=选择点击 t.me 链接时要拉起的客户端
+method = select,"302重定向","HTML页面跳转",tag=跳转方式,desc=部分环境对自定义scheme的 302 不友好，可改用 HTML 页面跳转
+keep_https = switch,false,tag=保留HTTPS(不转tg://),desc=开启后：非Swiftgram/自定义时，直接回到原 https 链接（让系统/已装客户端自行接管 Universal Link）
+custom_tpl = input,"",tag=自定义Scheme模板,desc=仅“自定义”时生效：支持 {url}(encode后的原链接) 与 {raw}(原链接)。例：xxx://parse?url={url}
+log = switch,true,tag=日志输出,desc=在 Loon 日志里输出目标跳转链接便于排错
+
+[Rule]
+DOMAIN-SUFFIX,t.me,PROXY
+DOMAIN-SUFFIX,telegram.me,PROXY
+DOMAIN-SUFFIX,telegram.dog,PROXY
+DOMAIN-SUFFIX,telegram.org,PROXY
+DOMAIN-SUFFIX,telesco.pe,PROXY
+
+[Script]
+http-response ^https?:\/\/(t\.me|telegram\.me|telegram\.dog)\/.+ script-path=https://github.com/Tanin4527/TGJump/raw/main/telegram_redirect.js, requires-body=false, timeout=10, tag=电报跳转
+
+[MITM]
+hostname = %APPEND% t.me, telegram.me, telegram.dog
